@@ -33,7 +33,7 @@ def bk_filter(x, ak):
 def bk_filter_2(x, ak):
     k = (len(ak)-1)/2
     y = [0 for i in range(k)]
-    y += [numpy.sum(numpy.array(x[i-k:i+1])*numpy.array(ak[0:k+1])) + numpy.sum(numpy.array(ak[k+1:]))*x[i] for i in range(k, len(x))]
+    y += [numpy.sum(numpy.array(x[i-k:i+1])*numpy.array(ak[0:k+1])) for i in range(k, len(x))]
     #y += [0 for i in range(k)]
     return y
 
@@ -64,12 +64,15 @@ c120=bk(120,3600,36000)
 c480=bk(480,3600,3600000)
 bid_f_120=bk_filter(bid_v,c120)
 bid_f_480=bk_filter(bid_v,c480)
+bid_f_480_2=bk_filter_2(bid_v,c480)
 delta=bid_v[600]-bid_f_120[600]
 bid_c_120 = map(lambda x: x+delta, bid_f_120)
 delta=bid_v[600]-bid_f_480[600]
 bid_c_480 = map(lambda x: x+delta, bid_f_480)
+delta=bid_v[600]-bid_f_480_2[600]
+bid_c_480_2 = map(lambda x: x+delta, bid_f_480_2)
 plt.subplot(211)
-plt.plot(bid_v[500:-500], 'r', bid_c_120[500:-500], 'g', bid_c_480[500:-500], 'b')
+plt.plot(bid_v[500:-500], 'r', bid_c_120[500:-500], 'g', bid_c_480[500:-500], 'b', bid_c_480_2[500:-500], 'y')
 #Shift a destra della dimensione del campione, per valutare lo sfasamento
 plt.subplot(212)
 bid_s_c_120 = bid_c_120[-120:]+bid_c_120[:-120]
@@ -78,7 +81,7 @@ plt.plot(bid_v[1000:], 'r', bid_s_c_120[1000:], 'g', bid_s_c_480[1000:], 'b')
 plt.show()
 
 
-def simulate(actual, filtered, fign):
+def simulate(actual, filtered, fign, spread=.0003):
     prev = filtered[0]
     price = 0
     gain = [0]
@@ -97,11 +100,11 @@ def simulate(actual, filtered, fign):
                 prev = cur
             elif cur > prev + .0005:
                 # min found, go for long position
-                price = (actual[i]+.0003)*1000
-                print "Buying on ", i, " at (bid + 3pip spread) ", actual[i]+.0003, " (", actual[i], ")"
+                price = (actual[i]+spread)*1000
+                print "Buying on ", i, " at (bid + ", spread*10000, "pip spread) ", actual[i]+spread, " (", actual[i], ")"
                 cur = prev
                 order_buy_time.append(i)
-                order_buy_price.append(actual[i]+.0003)
+                order_buy_price.append(actual[i]+spread)
         else:
             #order placed
             if cur > prev:
