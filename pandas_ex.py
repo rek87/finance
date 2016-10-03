@@ -35,3 +35,5 @@ for i in range(len(data)):
 		gen_data = generate_data(data.ix[i])
 	else:
 		gen_data=gen_data.append(generate_data(data.ix[i]))
+
+#gen_data.to_csv('data/DAT_ASCII_EURGBP_M1_201605_generated.csv')
