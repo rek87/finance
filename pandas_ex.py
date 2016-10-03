@@ -12,8 +12,26 @@ oneD['HO'] = (oneD['High'] - oneD['Open'])*10000
 
 
 import pandas as pd
+import numpy as np
 
-data = pd.read_csv("/home/rek/DAT_ASCII_EURGBP_M1_201605.csv", names=['Date', 'Open', 'High', 'Low', 'Close', 'Vol'], index_col=[0], parse_dates=True, sep=';')
-a = data.ix[0]
-data.index[0]
-pd.date_range(start='2016-05-01', freq='s', periods=60)
+#Generate second data from M1 candle
+def generate_data(row):
+	# Create an array of 60 random number, ranging  [Low,High)
+	gdf=np.random.random(60)*(row.High-row.Low)+row.Low
+	# Adjust open, close and max values
+	gdf[0]=row.Open
+	gdf[-1]=row.Close
+	gdf[gdf.argmax()]=row.High
+	# Return a pandas dataframe with generated data
+	return pd.DataFrame(gdf, index=pd.date_range(start=row.XDate, freq='s', periods=60))
+
+#Read data from file
+data = pd.read_csv("data/DAT_ASCII_EURGBP_M1_201605.csv", names=['Date', 'Open', 'High', 'Low', 'Close', 'Vol'], index_col=[0], parse_dates=True, sep=';')
+data['XDate']=data.index #Replicate the index as a value to use apply
+#Generate fulll data
+gen_data=[]
+for i in range(len(data)):
+	if i == 0:
+		gen_data = generate_data(data.ix[i])
+	else:
+		gen_data=gen_data.append(generate_data(data.ix[i]))
