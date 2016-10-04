@@ -20,6 +20,19 @@ def bk(k, f_dn, f_up):
     print "sum(ak): ", sum(ak_f)
     return ak_f
 
+def bk_low(k, f_dn):
+    b = 2 * math.pi / f_dn
+    print 'b: ', b
+    ak_z = [(b)/math.pi]
+    ak_1k= [ (math.sin(i*b))/i/math.pi for i in range(1, k+1)]
+    ak = ak_z + ak_1k
+    theta = (1-(ak_z[0] + 2*sum(ak_1k))) / (2*k + 1)
+    print 'theta: ',theta
+    ak_c = map(lambda x: x + theta, ak)
+    ak_f = list(reversed(ak_c[1:])) + [ak_c[0]] + ak_c[1:]
+    print "sum(ak): ", sum(ak_f)
+    return ak_f
+
 
 def bk_filter(x, ak):
     k = (len(ak)-1)/2
@@ -33,7 +46,7 @@ def bk_filter(x, ak):
 def bk_filter_2(x, ak):
     k = (len(ak)-1)/2
     y = [0 for i in range(k)]
-    y += [numpy.sum(numpy.array(x[i-k:i+1])*numpy.array(ak[0:k+1])) for i in range(k, len(x))]
+    y += [numpy.sum(numpy.array(x[i-k:i+1])*numpy.array(ak[0:k+1])*2) for i in range(k, len(x))]
     #y += [0 for i in range(k)]
     return y
 
@@ -59,6 +72,12 @@ time = sorted(bid.keys())
 bid_v = [sum(bid[t])/len(bid[t]) for t in time]
 ask_v = [sum(ask[t])/len(ask[t]) for t in time]
 
+c_pad=bk_low(14400, 14400)
+bid_f_pad=bk_filter_2(bid_v,c_pad)
+plt.plot(bid_v, 'b', bid_f_pad, 'g')
+plt.show()
+simulate(bid_v[1500:], bid_f_pad[1500:], 2)
+
 spread_v = [(ask_v[i]-bid_v[i])*10000 for i in range(0,len(bid_v))]
 c120=bk(120,3600,36000)
 c480=bk(480,3600,3600000)
@@ -81,7 +100,8 @@ plt.plot(bid_v[1000:], 'r', bid_s_c_120[1000:], 'g', bid_s_c_480[1000:], 'b')
 plt.show()
 
 
-def simulate(actual, filtered, fign, spread=.0003):
+
+def simulate(actual, filtered, fign, band=.0005, spread=.0003):
     prev = filtered[0]
     price = 0
     gain = [0]
@@ -98,7 +118,7 @@ def simulate(actual, filtered, fign, spread=.0003):
             if cur < prev:
                 # current value is less than previous, going down
                 prev = cur
-            elif cur > prev + .0005:
+            elif cur > prev + band:
                 # min found, go for long position
                 price = (actual[i]+spread)*1000
                 print "Buying on ", i, " at (bid + ", spread*10000, "pip spread) ", actual[i]+spread, " (", actual[i], ")"
@@ -110,7 +130,7 @@ def simulate(actual, filtered, fign, spread=.0003):
             if cur > prev:
                 # going up
                 prev = cur
-            elif cur < prev - .0005:
+            elif cur < prev - band:
                 # max found, sell the order
                 order_gain = (actual[i]*1000 - price)            
                 cumul_gain += order_gain
