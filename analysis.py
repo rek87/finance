@@ -42,23 +42,27 @@ def bk_filter(x, ak):
     y += [0 for i in range(k)]
     return y
 
-# Return a series with filtered data and same index as DF
-# (not able to add it directly to DF)
-def bk_filter_pd(x, ak):
-    k = (len(ak)-1)/2
-    f = pd.Series(0, index=x.index)
-    for i in range(k, len(x) - k):
-        f.iloc[i] = (x.iloc[i-k:i+k+1]['Bid']*ak).sum()
-    return f
-    #numpy.convolve(df, c_pad, 'valid')
+# Return a ndarray with filtered data
+def np_bkf(x, ak):
+    #k = (len(ak)-1)/2
+    #f = pd.Series(0, index=x.index)
+    #for i in range(k, len(x) - k):
+    #    f.iloc[i] = (x.iloc[i-k:i+k+1]['Bid']*ak).sum()
+    #return f
+    # Full convolution is correct in [(len(ak)-1)/2:-(len(ak)-1)/2] interval
+    return numpy.convolve(x, ak)
 
 # Prova a fare una predizione per evitare lo sfasamento:
-#i dati futuri sono tutti uguali al tempo k
+#i dati futuri sono tutti uguali a 0
 def bk_filter_2(x, ak):
     k = (len(ak)-1)/2
-    y = [0 for i in range(k)]
-    y += [numpy.sum(numpy.array(x[i-k:i+1])*numpy.array(ak[0:k+1])*2) for i in range(k, len(x))]
+    #y = [0 for i in range(k)]
+    #y += [numpy.sum(numpy.array(x[i-k:i+1])*numpy.array(ak[0:k+1])*2) for i in range(k, len(x))]
     #y += [0 for i in range(k)]
+
+    aak=numpy.concatenate([2*ak[0:k],ak[k:k+1]])
+    # Coeff needs to be swapped, because they are swapped by convolution
+    y = numpy.convolve(x, numpy.flipud(aak))
     return y
 
 # Read data from tick file and return a Pandas DF
