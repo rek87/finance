@@ -60,7 +60,7 @@ def bk_filter_2(x, ak):
     #y += [numpy.sum(numpy.array(x[i-k:i+1])*numpy.array(ak[0:k+1])*2) for i in range(k, len(x))]
     #y += [0 for i in range(k)]
 
-    aak=numpy.concatenate([2*ak[0:k],ak[k:k+1]])
+    aak=numpy.concatenate([2*numpy.array(ak[0:k]),ak[k:k+1]])
     # Coeff needs to be swapped, because they are swapped by convolution
     y = numpy.convolve(x, numpy.flipud(aak))
     return y
