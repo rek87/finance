@@ -77,6 +77,7 @@ def df_from_tick(data_file=None):
     df2=df.groupby(df.index).mean()
     return df2
 
+# Adaptation is still wrong
 def run_adaptive(s=None, order=3, delay=2):
 	if s is None:
 		s=numpy.array([numpy.sin(2*numpy.pi*t/100) for t in range(1000)])
@@ -88,6 +89,18 @@ def run_adaptive(s=None, order=3, delay=2):
 		#Adapt filter coefficients giving input data who contributed to produce s[k]
 		filt.adapt(s[k], s[k-delay-order+1:k-delay+1])
 	return a
+
+def run_adaptive2(s=None, order=3, delay=2):
+    if s is None:
+        s=numpy.array([numpy.sin(2*numpy.pi*t/100) for t in range(1000)])
+    a=numpy.zeros(len(s))
+    filt=pa.filters.FilterNLMS(order, mu=.98)
+    for k in range(order-1,len(s)-delay):
+        x=s[k-order:k+1]  #Input to predictor: last 'order' samples
+        a[k+delay]=filt.predict(x)
+        #Adapt filter coefficients giving input data who contributed to produce s[k]
+        filt.adapt(s[k+delay], x)
+    return a
 
 if __name__ == "__main__":
     c_pad=bk_low(14400, 14400)
