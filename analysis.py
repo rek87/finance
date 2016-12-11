@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import math
 import numpy
 import pandas as pd
+import padasip as pa
 
 def bk(k, f_dn, f_up):
     a = 2 * math.pi / f_up
@@ -83,7 +84,7 @@ def run_adaptive(s=None, order=3, delay=2):
 		s=numpy.array([numpy.sin(2*numpy.pi*t/100) for t in range(1000)])
 	a=numpy.zeros(len(s)+delay)
 	filt=pa.filters.FilterNLMS(order, mu=.98)
-	for k in range(delay+order-1:len(s)):
+	for k in range(delay+order-1,len(s)):
 		x=s[k-order+1:k+1]  #Input to predictor: last 'order' samples
 		a[k+delay]=filt.predict(x)
 		#Adapt filter coefficients giving input data who contributed to produce s[k]
@@ -102,7 +103,28 @@ def run_adaptive2(s=None, order=3, delay=2):
         filt.adapt(s[k+delay], x)
     return a
 
+def predictor(s=None, delay=2, order=3, mu=.98):
+    # Square wave signal
+    if s is None:
+        s = numpy.zeros(10000)
+        for k in range(1, 10, 2):
+            s[k*1000:(k+1)*1000] = 1
+    y=numpy.zeros(len(s)+delay)
+    e=numpy.zeros(len(s))
+    filt=pa.filters.FilterNLMS(order, mu=mu)
+    for k in range(order+delay-1, len(s)):
+        # Calculate y[k-delta] - Useless, is recalculated in adapt method
+        p = filt.predict(s[k-delay-order+1:k-delay+1])
+        e[k]=s[k]-p
+        # Adapt coeff using current x[k] and y[k-delta]
+        filt.adapt(s[k], s[k-delay-order+1:k-delay+1])
+        y[k+delay] = filt.predict(s[k-order+1:k+1])
+    return y, e
+
 if __name__ == "__main__":
+    df=pd.read_csv('data/DAT_ASCII_EURGBP_M1_201605.csv', names=['Date', 'O'], sep=';', parse_dates=True, usecols=[0,1], index_col=0)
+
+
     c_pad=bk_low(14400, 14400)
     bid_f_pad=bk_filter_2(bid_v,c_pad)
     plt.plot(bid_v, 'b', bid_f_pad, 'g')
