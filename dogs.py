@@ -10,6 +10,7 @@ import pandas as pd
 import time
 import datetime
 import os
+import matplotlib.pyplot as plt
 
 def get_data(override=False, filename='dogs.csv'):
     if os.path.exists(filename) and not override:
@@ -102,15 +103,14 @@ def calc_earnings(in_filename='dogs.csv', filename='dogs_full.csv', override=Fal
         # Calculate number of stocks (integer!)
         cur['Stocks'] = (amount / cur_in['Price']).fillna(0).astype('int64')
         #Calculate initial amount and remaining for the year
-        cur['InitAmount'] = cur['Stocks'] * cur_in['Price']
+        cur['InitAmount'] = (cur['Stocks'] * cur_in['Price']).fillna(0)
         cur['Remaining'] = amount - cur['InitAmount']
         # Calculate earnings from dividends
         cur['DividendEarn'] = cur['Stocks'] * cur_in['Dividend']
         # Calculate Earnings from stock selling at end of year
         cur['StockEarn'] = cur['Stocks'] * cur_in['PriceNext']
         # Calculate total earning for the stock
-        cur['TotalEarn'] = cur['StockEarn'] + cur['DividendEarn']
-        cur.fillna({'TotalEarn': amount}, inplace=True)
+        cur['TotalEarn'] = (cur['StockEarn'] + cur['DividendEarn']).fillna(0)
         # Calculate total year's earnings
         cur = cur.assign(CumulEarn = (cur['TotalEarn'].sum() + cur['Remaining'].sum()))
         
@@ -124,3 +124,9 @@ def calc_earnings(in_filename='dogs.csv', filename='dogs_full.csv', override=Fal
     if filename is not None:
         m.to_csv('dogs_full.csv', index=False)
     return m
+
+def plot(data):
+    ax = data[['Symbol','TotalEarn', 'Remaining']].plot(kind='bar', stacked=True, x='Symbol')
+    (data['InitAmount']+data['Remaining']).plot(x=data['Symbol'], ax=ax)
+    ax.pcolorfast(ax.get_xlim(), ax.get_ylim(), (data['Year']%2).values[np.newaxis], cmap='Blues', alpha=.3)
+    plt.show()
