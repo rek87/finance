@@ -13,7 +13,7 @@ import os
 import matplotlib.pyplot as plt
 
 def get_data(override=False, filename='dogs.csv'):
-    if os.path.exists(filename) and not override:
+    if filename is not None and os.path.exists(filename) and not override:
         return pd.read_csv(filename)
 
     # Utility function to extract data from stock webpage
@@ -71,7 +71,7 @@ def get_data(override=False, filename='dogs.csv'):
                 div_rows = table.find_all(text = 'Dividend')
                 for r in div_rows:
                     dividends = dividends + float(r.find_parent('td').strong.text)
-                
+
                 # Get prices
                 i_pr = get_price_by_year(table, y)
                 e_pr = get_price_by_year(table, y+1)
@@ -97,7 +97,7 @@ def calc_earnings(in_filename='dogs.csv', filename='dogs_full.csv', override=Fal
         amount = tot[tot['Year'] == (y-1)]['CumulEarn'].iloc[0] / 10 if y > 2008 else 1000
         print "y %d amount: %d" % (y, amount)
         cur_in = in_data.loc[in_data['Year'] == y]
-        
+
         # Built a dataframe with current year data
         cur = pd.DataFrame(cur_in[['Symbol', 'Year']])
         # Calculate number of stocks (integer!)
@@ -113,7 +113,7 @@ def calc_earnings(in_filename='dogs.csv', filename='dogs_full.csv', override=Fal
         cur['TotalEarn'] = (cur['StockEarn'] + cur['DividendEarn']).fillna(0)
         # Calculate total year's earnings
         cur = cur.assign(CumulEarn = (cur['TotalEarn'].sum() + cur['Remaining'].sum()))
-        
+
         print "================================="
         print "===============   %4d  =============" % y
         print cur
@@ -127,6 +127,11 @@ def calc_earnings(in_filename='dogs.csv', filename='dogs_full.csv', override=Fal
 
 def plot(data):
     ax = data[['Symbol','TotalEarn', 'Remaining']].plot(kind='bar', stacked=True, x='Symbol')
-    (data['InitAmount']+data['Remaining']).plot(x=data['Symbol'], ax=ax)
-    ax.pcolorfast(ax.get_xlim(), ax.get_ylim(), (data['Year']%2).values[np.newaxis], cmap='Blues', alpha=.3)
+    (data['InitAmount']+data['Remaining']).plot(x=data['Symbol'], ax=ax, style='r')
+    ax.pcolorfast(ax.get_xlim(), ax.get_ylim(),
+        pd.to_numeric((data['Year']%2).values)[np.newaxis], cmap='Blues', alpha=.3)
+    ax2 = ax.twiny()
+    ax2.set_xlim(2008, 2018)
+    ax2.set_xticks(range(2008,2018))
+    ax.grid(axis='y', linestyle='--')
     plt.show()
